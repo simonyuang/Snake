@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>贪吃蛇</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+        <style>
+            body, html {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                text-align: center;
+                font-size: 0;
+            }
+
+            i {
+                font-style: normal;
+            }
+
+            body:after {
+                content: "";
+                vertical-align: middle;
+                display: inline-block;
+                width: 0;
+                height: 100%;
+            }
+
+            canvas {
+                display: inline-block;
+                margin: 0;
+                padding: 0;
+                border: 1px solid gray;
+                vertical-align: middle;
+                background-color: #1a1a1a;
+            }
+
+            .s-level {
+                position: absolute;
+                top: 0;
+                right: 0;
+                padding-right: 1rem;
+                padding-top: 1rem;
+                font-size: 14px;
+                color: #555;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <section class="s-level">Level: <i id="level"></i></section>
+        <canvas></canvas>
+    </body>
+    <script>
+        var body = document.querySelector('body'),
+            canvas = document.querySelector('canvas'),
+            el  = document.querySelector('#level'),
+            ctx = canvas.getContext('2d');
+
+        function E() {
+            function init() {
+                var min = body.offsetHeight > body.offsetWidth ? body.offsetWidth :
+                    body.offsetHeight;
+                min -= 18;
+                while (min % 10) {
+                    min--;
+                };
+                canvas.width = canvas.height = min;
+            }
+            init();
+        }
+
+        function S() {
+            var snake = [],
+                colors = [],
+                level = 1,
+                drew  = false,
+                scores = 0,
+                aColors = ['#e6e2c3', '#e3c887', '#fad8be',
+                    '#fbb8ac', '#fe6673', '#2ae0c8', '#a2e1d4',
+                    '#acf6ef', '#cbf5fb', '#bdf3d4', '#a6e22d',
+                    '#e6db5d', '#fd971f', '#ff0080'
+                ],
+                dot   = {x: 0, y: 0, c: 0},
+                s     = 10,
+                w     = canvas.width,
+                h     = canvas.height,
+                n     = w / 10, //以10等分格数
+                m     = n % 2 ? (n - 1) / 2 : n / 2,
+                //0: up, 1: right, 2: down, 3: left
+                dir   = 0, i;
+            function init() {
+                var i;
+                for (i = 0; i < 3; i++) {
+                    snake.push([m, m + i]);
+                    colors.push(randomColor());
+                }
+                generator();
+                el.innerHTML = level;
+            }
+
+            function eat(x, y) {
+                if (dot.x == x && dot.y == y) {
+                    colors.unshift(dot.c);
+                    snake.unshift([dot.x, dot.y]);
+                    scores++;
+                    scores == ((level * level + level) * 5) ? level++ : 0;
+                    level > 10 ? level = 10 : 0;
+                    el.innerHTML = level;
+                    generator();
+                } else {
+                    snake.pop();
+                    check(x, y);
+                }
+            }
+            /*
+            * Never Over
+            */
+            function over() {
+
+            }
+
+            function randomColor() {
+                var i = Math.floor(aColors.length * Math.random());
+                i == aColors.length ? i-- : 0;
+                return aColors[i];
+            }
+
+            /*
+            * 边缘检测
+            * 自动转向
+            */
+            function check(x, y) {
+                if (x == n || x == -1) {
+                    x == n ? x-- : x++;
+                    y < n / 2 ? (dir = 2, y++) : (dir = 0, y--);
+                }
+                if (y == n || y == -1) {
+                    y == n ? y-- : y++;
+                    x < n / 2 ? (dir = 1, x++) : (dir = 3, x--);
+                }
+                snake.unshift([x, y]);
+            }
+
+            function draw() {
+                switch (dir) {
+                    case 0: //up
+                        eat(snake[0][0], snake[0][1] - 1);
+                        break;
+                    case 1: //right
+                        eat(snake[0][0] + 1, snake[0][1]);
+                        break;
+                    case 2: //down
+                        eat(snake[0][0], snake[0][1] + 1);
+                        break;
+                    case 3: //left
+                        eat(snake[0][0] - 1, snake[0][1]);
+                        break;
+                    default:
+                        break;
+                }
+                ctx.clearRect(0, 0, w, h);
+                for (i = 0; i < snake.length; i++) {
+                    ctx.fillStyle = colors[i];
+                    ctx.fillRect(snake[i][0] * 10, snake[i][1] * 10, s, s);
+                }
+                drew = true;
+                ctx.fillStyle = dot.c;
+                ctx.fillRect(dot.x * 10, dot.y * 10, s, s);
+                setTimeout(draw, 220 - (level * 20));
+            }
+
+            function generator() {
+                dot.x = Math.floor(n * Math.random());
+                dot.y = Math.floor(n * Math.random());
+                dot.c = randomColor();
+                dot.x == n ? dot.x-- : 0;
+                dot.y == n ? dot.y-- : 0;
+                for (i = 0; i < snake.length; i++) {
+                    if (dot.x == snake[i][0] && dot.y == snake[i][1]) {
+                        generator();
+                    }
+                }
+            }
+
+            document.addEventListener('keydown', function(e) {
+
+                if (!drew) {
+                    return;
+                }
+                drew = false;
+                e.preventDefault();
+                e.stopPropagation();
+                switch (e.keyCode) {
+                    case 38: //up
+                        dir != 2 ? dir = 0 : 0;
+                        break;
+                    case 39: //right
+                        dir != 3 ? dir = 1 : 0;
+                        break;
+                    case 40: //down
+                        dir != 0 ? dir = 2 : 0;
+                        break;
+                    case 37: //left
+                        dir != 1 ? dir = 3 : 0;
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            var tx, ty, dx, dy;
+            document.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                tx = e.touches[0].pageX;
+                ty = e.touches[0].pageY;
+            });
+
+            document.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                if (!drew) {
+                    return;
+                }
+                drew = false;
+                dx = e.touches[0].pageX - tx;
+                dy = e.touches[0].pageY - ty;
+                Math.abs(dx) >= Math.abs(dy) ?
+                    (dx >= 0 ? (dir != 3 ? dir = 1 : 0) : (dir != 1 ? dir = 3 : 0)) :
+                    (dy >= 0 ? (dir != 0 ? dir = 2 : 0) : (dir != 2 ? dir = 0 : 0));
+            });
+
+            init();
+            draw();
+        }
+        new E;
+        new S;
+    </script>
+</html>
